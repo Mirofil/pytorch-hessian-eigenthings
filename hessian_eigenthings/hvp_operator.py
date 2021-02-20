@@ -32,8 +32,11 @@ class HVPOperator(Operator):
         fp16=False,
         full_dataset=True,
         max_samples=256,
+        arch_only=True
     ):
-        size = int(sum(p.numel() for p in model.parameters()))
+        self.arch_only = arch_only
+        params = model.parameters() if arch_only is False else model.arch_params()
+        size = int(sum(p.numel() for p in params))
         super(HVPOperator, self).__init__(size)
         self.grad_vec = torch.zeros(size)
         self.model = model
@@ -83,13 +86,19 @@ class HVPOperator(Operator):
         hessian_vec_prod = hessian_vec_prod / n
         return hessian_vec_prod
 
-    def _zero_grad(self):
+    def _zero_grad(self, arch_only=True):
         """
         Zeros out the gradient info for each parameter in the model
         """
-        for p in self.model.parameters():
-            if p.grad is not None:
-                p.grad.data.zero_()
+
+        if self.arch_only is True:
+            for p in self.model.arch_params():
+                if p.grad is not None:
+                    p.grad.data.zero_()
+        else:
+            for p in self.model.parameters():
+                if p.grad is not None:
+                    p.grad.data.zero_()
 
     def _prepare_grad(self):
         """
@@ -114,8 +123,9 @@ class HVPOperator(Operator):
 
             output = self.model(input)
             loss = self.criterion(output, target)
+            params = self.model.parameters() if self.arch_only is False else self.model.arch_params()
             grad_dict = torch.autograd.grad(
-                loss, self.model.parameters(), create_graph=True
+                loss, params, create_graph=True
             )
             if grad_vec is not None:
                 grad_vec += torch.cat([g.contiguous().view(-1) for g in grad_dict])

@@ -15,6 +15,7 @@ def compute_hessian_eigenthings(
     use_gpu=True,
     fp16=False,
     max_samples=2**16,
+    arch_only = True,
     **kwargs
 ):
     """
@@ -61,6 +62,7 @@ def compute_hessian_eigenthings(
         use_gpu=use_gpu,
         full_dataset=full_dataset,
         max_samples=max_samples,
+        arch_only=arch_only
     )
     eigenvals, eigenvecs = None, None
     if mode == "power_iter":
