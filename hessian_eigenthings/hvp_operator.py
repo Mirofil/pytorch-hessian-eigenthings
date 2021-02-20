@@ -67,8 +67,9 @@ class HVPOperator(Operator):
         grad_vec = self._prepare_grad()
         self._zero_grad()
         # take the second gradient
+        params = self.model.parameters() if self.arch_only is False else self.model.arch_params()
         grad_grad = torch.autograd.grad(
-            grad_vec, self.model.parameters(), grad_outputs=vec, only_inputs=True
+            grad_vec, params, grad_outputs=vec, only_inputs=True
         )
         # concatenate the results over the different components of the network
         hessian_vec_prod = torch.cat([g.contiguous().view(-1) for g in grad_grad])
